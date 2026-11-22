@@ -183,6 +183,18 @@
             </div>
           </div>
 
+          <section class="panel admin-access">
+            <div class="panel-heading">
+              <h2>Acceso administrativo</h2>
+              <span class="pill" id="auth-state">Sin autenticar</span>
+            </div>
+            <p class="muted">Para agregar, editar o eliminar recursos, introduce tu token de administrador. Se conservará únicamente mientras esta página permanezca abierta y no se guardará en el navegador.</p>
+            <div class="auth-controls">
+              <input id="admin-token" type="password" autocomplete="off" spellcheck="false" placeholder="Token de administrador" aria-label="Token de administrador">
+              <button id="clear-token" class="button secondary" type="button">Borrar token</button>
+            </div>
+          </section>
+
           <div class="admin-grid">
             <section class="panel">
               <div class="panel-heading">
@@ -191,11 +203,13 @@
               <form id="technology-form">
                 <input id="technology-id" type="hidden">
                 <label for="technology-name">Nombre del recurso</label>
-                <input id="technology-name" type="text" placeholder="Ej. Curso de JavaScript" maxlength="100" required>
+                <input id="technology-name" type="text" placeholder="Ej. Curso de JavaScript" maxlength="150" required>
                 <label for="technology-category">Categoría</label>
                 <input id="technology-category" type="text" placeholder="Ej. Desarrollo web" maxlength="100" required>
                 <label for="technology-description">Descripción</label>
                 <textarea id="technology-description" placeholder="Describe el recurso educativo..." maxlength="2000" rows="5" required></textarea>
+                <label for="technology-url">URL del recurso (opcional)</label>
+                <input id="technology-url" type="url" placeholder="https://ejemplo.com/curso" maxlength="2000">
                 <div class="form-actions">
                   <button id="save-record" class="button primary" type="submit">Agregar recurso</button>
                   <button id="cancel-edit" class="button secondary" type="button" hidden>Cancelar</button>

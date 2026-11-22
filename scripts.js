@@ -1,6 +1,6 @@
 "use strict";
 
-const API = "/api/tecnologias";
+const API = "/api/recursos";
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
@@ -14,6 +14,8 @@ const idInput = $("#technology-id");
 const nameInput = $("#technology-name");
 const categoryInput = $("#technology-category");
 const descriptionInput = $("#technology-description");
+const urlInput = $("#technology-url");
+const tokenInput = $("#admin-token");
 
 let resources = [];
 let busy = false;
@@ -70,10 +72,20 @@ function showMessage(text, error = false) {
 }
 
 async function request(url, options = {}) {
+  const isWrite = ["POST", "PUT", "DELETE"].includes(options.method);
+  const token = tokenInput.value.trim();
+
+  if (isWrite && !token) {
+    throw new Error(
+      "Introduce el token de administrador antes de modificar recursos."
+    );
+  }
+
   const response = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(isWrite ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers
     }
   });
@@ -127,6 +139,14 @@ function resourceCard(item) {
     element("h3", "", item.nombre),
     element("p", "", item.descripcion)
   );
+
+  if (item.url) {
+    const link = element("a", "resource-link", "Abrir recurso ↗");
+    link.href = item.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    card.append(link);
+  }
 
   return card;
 }
@@ -317,6 +337,14 @@ async function viewResource(id) {
       element("p", "", `ID: ${item.id}`)
     );
 
+    if (item.url) {
+      const link = element("a", "resource-link", "Abrir recurso ↗");
+      link.href = item.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      detail.append(link);
+    }
+
     detail.hidden = false;
   } catch (error) {
     showMessage(error.message, true);
@@ -333,6 +361,7 @@ async function editResource(id) {
     nameInput.value = item.nombre;
     categoryInput.value = item.categoria;
     descriptionInput.value = item.descripcion;
+    urlInput.value = item.url || "";
 
     $("#form-title").textContent = "Editar recurso";
     saveButton.textContent = "Guardar cambios";
@@ -402,10 +431,14 @@ form.addEventListener("submit", async event => {
   const data = {
     nombre: nameInput.value.trim(),
     categoria: categoryInput.value.trim(),
-    descripcion: descriptionInput.value.trim()
+    descripcion: descriptionInput.value.trim(),
+    url: urlInput.value.trim()
   };
 
-  if (Object.values(data).some(value => !value)) {
+  if (
+    [data.nombre, data.categoria, data.descripcion]
+      .some(value => !value)
+  ) {
     showMessage("Completa todos los campos.", true);
     return;
   }
@@ -437,6 +470,18 @@ form.addEventListener("submit", async event => {
     busy = false;
     saveButton.disabled = false;
   }
+});
+
+tokenInput.addEventListener("input", () => {
+  $("#auth-state").textContent = tokenInput.value.trim()
+    ? "Token introducido"
+    : "Sin autenticar";
+});
+
+$("#clear-token").addEventListener("click", () => {
+  tokenInput.value = "";
+  $("#auth-state").textContent = "Sin autenticar";
+  showMessage("Token borrado de esta página.");
 });
 
 cancelButton.addEventListener("click", () => {
