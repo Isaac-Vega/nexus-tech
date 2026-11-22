@@ -15,7 +15,6 @@ const nameInput = $("#technology-name");
 const categoryInput = $("#technology-category");
 const descriptionInput = $("#technology-description");
 const urlInput = $("#technology-url");
-const tokenInput = $("#admin-token");
 
 let resources = [];
 let busy = false;
@@ -72,40 +71,23 @@ function showMessage(text, error = false) {
 }
 
 async function request(url, options = {}) {
-  const isWrite = ["POST", "PUT", "DELETE"].includes(options.method);
-  const token = tokenInput.value.trim();
-
-  if (isWrite && !token) {
-    throw new Error(
-      "Introduce el token de administrador antes de modificar recursos."
-    );
-  }
-
   const response = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...(isWrite ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers
     }
   });
 
   const type = response.headers.get("content-type") || "";
-
   if (!type.includes("application/json")) {
-    throw new Error(
-      "El servidor no devolvió JSON. Abre el sitio con Node.js, no con Live Server."
-    );
+    throw new Error("El servidor no devolvió JSON. Comprueba la aplicación Node.js.");
   }
 
   const data = await response.json();
-
   if (!response.ok) {
-    throw new Error(
-      data.error || "Error al procesar la solicitud."
-    );
+    throw new Error(data.error || "Error al procesar la solicitud.");
   }
-
   return data;
 }
 
@@ -435,10 +417,7 @@ form.addEventListener("submit", async event => {
     url: urlInput.value.trim()
   };
 
-  if (
-    [data.nombre, data.categoria, data.descripcion]
-      .some(value => !value)
-  ) {
+  if ([data.nombre, data.categoria, data.descripcion].some(value => !value)) {
     showMessage("Completa todos los campos.", true);
     return;
   }
@@ -470,18 +449,6 @@ form.addEventListener("submit", async event => {
     busy = false;
     saveButton.disabled = false;
   }
-});
-
-tokenInput.addEventListener("input", () => {
-  $("#auth-state").textContent = tokenInput.value.trim()
-    ? "Token introducido"
-    : "Sin autenticar";
-});
-
-$("#clear-token").addEventListener("click", () => {
-  tokenInput.value = "";
-  $("#auth-state").textContent = "Sin autenticar";
-  showMessage("Token borrado de esta página.");
 });
 
 cancelButton.addEventListener("click", () => {

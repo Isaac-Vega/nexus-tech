@@ -557,6 +557,17 @@ td { color: #d3d0e9; overflow-wrap: anywhere; }
   font-size: 11px;
 }
 
+.resource-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: #b7a8ff;
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.resource-link:hover { text-decoration: underline; }
+
 @media (max-width: 1100px) {
   .sidebar { width: 220px; flex-basis: 220px; }
   .content { padding: 30px 25px; }
@@ -591,43 +602,4 @@ td { color: #d3d0e9; overflow-wrap: anywhere; }
     scroll-behavior: auto !important;
     transition: none !important;
   }
-}
-
-
-.admin-access {
-  margin-bottom: 24px;
-}
-
-.auth-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.auth-controls input {
-  flex: 1 1 260px;
-  min-width: 0;
-  padding: 12px 14px;
-  border: 1px solid #4b4776;
-  border-radius: 10px;
-  background: #171733;
-  color: #fff;
-  font: inherit;
-}
-
-.auth-controls input:focus {
-  outline: 1px solid #998aff;
-}
-
-.resource-link {
-  display: inline-block;
-  margin-top: 14px;
-  color: #b7a8ff;
-  font-size: 13px;
-  font-weight: 700;
-  overflow-wrap: anywhere;
-}
-
-.resource-link:hover {
-  text-decoration: underline;
 }

@@ -1,7 +1,8 @@
+"use strict";
+
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
-const crypto = require("node:crypto");
 const { Pool } = require("pg");
 
 const root = __dirname;
@@ -29,8 +30,10 @@ const pool = process.env.DATABASE_URL
 function json(res, status, data) {
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store"
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff"
   });
+
   res.end(JSON.stringify(data));
 }
 
@@ -52,11 +55,17 @@ function readBody(req) {
 
     req.on("end", () => {
       if (exceeded) {
-        return reject(new Error("Solicitud demasiado grande"));
+        return reject(
+          new Error("Solicitud demasiado grande")
+        );
       }
 
       try {
-        resolve(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+        resolve(
+          JSON.parse(
+            Buffer.concat(chunks).toString("utf8")
+          )
+        );
       } catch {
         reject(new Error("JSON inválido"));
       }
@@ -83,7 +92,9 @@ async function initDatabase() {
     )
   `);
 
-  console.log("Base de datos inicializada correctamente");
+  console.log(
+    "Base de datos inicializada correctamente"
+  );
 }
 
 function validate(data) {
@@ -92,18 +103,26 @@ function validate(data) {
     typeof data.nombre !== "string" ||
     typeof data.categoria !== "string" ||
     typeof data.descripcion !== "string" ||
-    (data.url != null && typeof data.url !== "string")
+    (data.url != null &&
+      typeof data.url !== "string")
   ) {
     return false;
   }
 
+  const nombre = data.nombre.trim();
+  const categoria = data.categoria.trim();
+  const descripcion = data.descripcion.trim();
   const url = (data.url || "").trim();
 
   if (url) {
     try {
       const parsed = new URL(url);
 
-      if (!["https:", "http:"].includes(parsed.protocol)) {
+      if (
+        !["https:", "http:"].includes(
+          parsed.protocol
+        )
+      ) {
         return false;
       }
     } catch {
@@ -112,40 +131,14 @@ function validate(data) {
   }
 
   return (
-    data.nombre.trim().length > 0 &&
-    data.nombre.trim().length <= 150 &&
-    data.categoria.trim().length > 0 &&
-    data.categoria.trim().length <= 100 &&
-    data.descripcion.trim().length > 0 &&
-    data.descripcion.trim().length <= 2000 &&
+    nombre.length > 0 &&
+    nombre.length <= 150 &&
+    categoria.length > 0 &&
+    categoria.length <= 100 &&
+    descripcion.length > 0 &&
+    descripcion.length <= 2000 &&
     url.length <= 2000
   );
-}
-
-function authorized(req) {
-  const secret = process.env.ADMIN_TOKEN;
-
-  if (!secret || secret.length < 32) {
-    return false;
-  }
-
-  const header = req.headers.authorization || "";
-
-  if (!header.startsWith("Bearer ")) {
-    return false;
-  }
-
-  const token = header.slice(7);
-
-  const expected = crypto.createHash("sha256")
-    .update(secret)
-    .digest();
-
-  const received = crypto.createHash("sha256")
-    .update(token)
-    .digest();
-
-  return crypto.timingSafeEqual(expected, received);
 }
 
 async function handleAPI(req, res, pathname) {
@@ -155,8 +148,12 @@ async function handleAPI(req, res, pathname) {
     });
   }
 
-  const match = pathname.match(/^\/api\/recursos\/([0-9]+)$/);
-  const isCollection = pathname === "/api/recursos";
+  const match = pathname.match(
+    /^\/api\/recursos\/([0-9]+)$/
+  );
+
+  const isCollection =
+    pathname === "/api/recursos";
 
   if (!match && !isCollection) {
     return json(res, 404, {
@@ -166,20 +163,20 @@ async function handleAPI(req, res, pathname) {
 
   const id = match ? Number(match[1]) : null;
 
-  if (match && (!Number.isSafeInteger(id) || id < 1)) {
-    return json(res, 400, { error: "ID inválido" });
-  }
-
-  if (["POST", "PUT", "DELETE"].includes(req.method)) {
-    if (!authorized(req)) {
-      return json(res, 401, {
-        error: "No autorizado"
-      });
-    }
+  if (
+    match &&
+    (!Number.isSafeInteger(id) || id < 1)
+  ) {
+    return json(res, 400, {
+      error: "ID inválido"
+    });
   }
 
   try {
-    if (req.method === "GET" && isCollection) {
+    if (
+      req.method === "GET" &&
+      isCollection
+    ) {
       const result = await pool.query(
         "SELECT * FROM recursos ORDER BY id ASC"
       );
@@ -187,7 +184,10 @@ async function handleAPI(req, res, pathname) {
       return json(res, 200, result.rows);
     }
 
-    if (req.method === "GET" && match) {
+    if (
+      req.method === "GET" &&
+      match
+    ) {
       const result = await pool.query(
         "SELECT * FROM recursos WHERE id = $1",
         [id]
@@ -202,7 +202,10 @@ async function handleAPI(req, res, pathname) {
       return json(res, 200, result.rows[0]);
     }
 
-    if (req.method === "POST" && isCollection) {
+    if (
+      req.method === "POST" &&
+      isCollection
+    ) {
       const data = await readBody(req);
 
       if (!validate(data)) {
@@ -227,7 +230,10 @@ async function handleAPI(req, res, pathname) {
       return json(res, 201, result.rows[0]);
     }
 
-    if (req.method === "PUT" && match) {
+    if (
+      req.method === "PUT" &&
+      match
+    ) {
       const data = await readBody(req);
 
       if (!validate(data)) {
@@ -262,7 +268,10 @@ async function handleAPI(req, res, pathname) {
       return json(res, 200, result.rows[0]);
     }
 
-    if (req.method === "DELETE" && match) {
+    if (
+      req.method === "DELETE" &&
+      match
+    ) {
       const result = await pool.query(
         "DELETE FROM recursos WHERE id = $1 RETURNING id",
         [id]
@@ -282,11 +291,11 @@ async function handleAPI(req, res, pathname) {
     return json(res, 405, {
       error: "Método no permitido"
     });
-
   } catch (error) {
     if (
       error.message === "JSON inválido" ||
-      error.message === "Solicitud demasiado grande"
+      error.message ===
+        "Solicitud demasiado grande"
     ) {
       return json(res, 400, {
         error: error.message
@@ -301,82 +310,110 @@ async function handleAPI(req, res, pathname) {
   }
 }
 
-const server = http.createServer(async (req, res) => {
-  let pathname;
+const server = http.createServer(
+  async (req, res) => {
+    let pathname;
 
-  try {
-    pathname = decodeURIComponent(
-      new URL(req.url, "http://localhost").pathname
+    try {
+      pathname = decodeURIComponent(
+        new URL(
+          req.url,
+          "http://localhost"
+        ).pathname
+      );
+    } catch {
+      return json(res, 400, {
+        error: "Solicitud inválida"
+      });
+    }
+
+    if (pathname.startsWith("/api/")) {
+      return handleAPI(req, res, pathname);
+    }
+
+    if (
+      req.method !== "GET" &&
+      req.method !== "HEAD"
+    ) {
+      return json(res, 405, {
+        error: "Método no permitido"
+      });
+    }
+
+    const file = path.resolve(
+      root,
+      "." +
+        (pathname === "/"
+          ? "/index.html"
+          : pathname)
     );
-  } catch {
-    return json(res, 400, {
-      error: "Solicitud inválida"
-    });
-  }
 
-  if (pathname.startsWith("/api/")) {
-    return handleAPI(req, res, pathname);
-  }
-
-  if (req.method !== "GET" && req.method !== "HEAD") {
-    return json(res, 405, {
-      error: "Método no permitido"
-    });
-  }
-
-  const file = path.resolve(
-    root,
-    "." + (pathname === "/" ? "/index.html" : pathname)
-  );
-
-  if (!file.startsWith(root + path.sep)) {
-    res.writeHead(403);
-    return res.end("Forbidden");
-  }
-
-  const relative = path.relative(root, file);
-  const parts = relative.split(path.sep);
-
-  if (
-    parts.some(part => part.startsWith(".")) ||
-    parts.includes("node_modules") ||
-    parts.includes("server.js") ||
-    parts.includes("package.json") ||
-    parts.includes("package-lock.json")
-  ) {
-    res.writeHead(403);
-    return res.end("Forbidden");
-  }
-
-  fs.readFile(file, (err, data) => {
-    if (err) {
-      res.writeHead(404);
-      return res.end("Not found");
+    if (!file.startsWith(root + path.sep)) {
+      res.writeHead(403);
+      return res.end("Forbidden");
     }
 
-    res.writeHead(200, {
-      "Content-Type":
-        types[path.extname(file)] || "application/octet-stream"
-    });
+    const relative = path.relative(
+      root,
+      file
+    );
 
-    if (req.method === "HEAD") {
-      return res.end();
+    const parts = relative.split(path.sep);
+
+    if (
+      parts.some(part =>
+        part.startsWith(".")
+      ) ||
+      parts.includes("node_modules") ||
+      parts.includes("server.js") ||
+      parts.includes("package.json") ||
+      parts.includes("package-lock.json")
+    ) {
+      res.writeHead(403);
+      return res.end("Forbidden");
     }
 
-    res.end(data);
-  });
-});
+    fs.readFile(file, (err, data) => {
+      if (err) {
+        res.writeHead(404);
+        return res.end("Not found");
+      }
+
+      res.writeHead(200, {
+        "Content-Type":
+          types[path.extname(file)] ||
+          "application/octet-stream",
+        "X-Content-Type-Options": "nosniff"
+      });
+
+      if (req.method === "HEAD") {
+        return res.end();
+      }
+
+      res.end(data);
+    });
+  }
+);
 
 async function start() {
   try {
     await initDatabase();
 
-    server.listen(PORT, "0.0.0.0", () => {
-      console.log(`Servidor iniciado en puerto ${PORT}`);
-    });
-
+    server.listen(
+      PORT,
+      "0.0.0.0",
+      () => {
+        console.log(
+          `Servidor iniciado en puerto ${PORT}`
+        );
+      }
+    );
   } catch (error) {
-    console.error("Error al iniciar PostgreSQL:", error);
+    console.error(
+      "Error al iniciar PostgreSQL:",
+      error
+    );
+
     process.exit(1);
   }
 }
