@@ -1,52 +1,75 @@
 "use strict";
 
-const menuButton = document.querySelector(".menu-toggle");
-const nav = document.querySelector(".nav");
+const API = "/api/tecnologias";
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
 
-menuButton?.addEventListener("click", () => {
-  const open = nav.classList.toggle("open");
-  menuButton.setAttribute("aria-expanded", String(open));
-  menuButton.setAttribute(
-    "aria-label",
-    open ? "Cerrar menú" : "Abrir menú"
-  );
-});
+const form = $("#technology-form");
+const records = $("#records");
+const detail = $("#record-detail");
+const message = $("#crud-message");
+const saveButton = $("#save-record");
+const cancelButton = $("#cancel-edit");
+const idInput = $("#technology-id");
+const nameInput = $("#technology-name");
+const categoryInput = $("#technology-category");
+const descriptionInput = $("#technology-description");
 
-nav?.querySelectorAll("a").forEach((link) => {
-  link.addEventListener("click", () => {
-    nav.classList.remove("open");
-    menuButton?.setAttribute("aria-expanded", "false");
-    menuButton?.setAttribute("aria-label", "Abrir menú");
+let resources = [];
+let busy = false;
+let searchTerm = "";
+
+$("#year").textContent = new Date().getFullYear();
+
+function navigate(page) {
+  if (!$("#" + page)?.classList.contains("page")) {
+    page = "dashboard";
+  }
+
+  $$(".page").forEach(el => {
+    el.classList.toggle("active", el.id === page);
+  });
+
+  $$(".nav-link").forEach(el => {
+    el.classList.toggle("active", el.dataset.page === page);
+  });
+
+  $("#sidebar").classList.remove("open");
+  $(".menu-toggle").setAttribute("aria-expanded", "false");
+
+  if (location.hash !== "#" + page) {
+    history.replaceState(null, "", "#" + page);
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+$$("[data-page]").forEach(el => {
+  el.addEventListener("click", event => {
+    event.preventDefault();
+    navigate(el.dataset.page);
   });
 });
 
-const year = document.querySelector("#year");
-if (year) year.textContent = new Date().getFullYear();
+$$("[data-go]").forEach(el => {
+  el.addEventListener("click", () => navigate(el.dataset.go));
+});
 
-const API = "/api/tecnologias";
+$(".menu-toggle").addEventListener("click", () => {
+  const open = $("#sidebar").classList.toggle("open");
+  $(".menu-toggle").setAttribute("aria-expanded", String(open));
+});
 
-const form = document.querySelector("#technology-form");
-const records = document.querySelector("#records");
-const message = document.querySelector("#crud-message");
-const detail = document.querySelector("#record-detail");
-const saveButton = document.querySelector("#save-record");
-const cancelButton = document.querySelector("#cancel-edit");
-const refreshButton = document.querySelector("#refresh-records");
-const formTitle = document.querySelector("#form-title");
+window.addEventListener("hashchange", () => {
+  navigate(location.hash.slice(1));
+});
 
-const idInput = document.querySelector("#technology-id");
-const nameInput = document.querySelector("#technology-name");
-const categoryInput = document.querySelector("#technology-category");
-const descriptionInput = document.querySelector("#technology-description");
-
-let busy = false;
-
-function mostrarMensaje(texto, error = false) {
-  message.textContent = texto;
+function showMessage(text, error = false) {
+  message.textContent = text;
   message.classList.toggle("error", error);
 }
 
-async function solicitar(url, options = {}) {
+async function request(url, options = {}) {
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -55,126 +78,263 @@ async function solicitar(url, options = {}) {
     }
   });
 
+  const type = response.headers.get("content-type") || "";
+
+  if (!type.includes("application/json")) {
+    throw new Error(
+      "El servidor no devolvió JSON. Abre el sitio con Node.js, no con Live Server."
+    );
+  }
+
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.error || "Error en la solicitud");
+    throw new Error(
+      data.error || "Error al procesar la solicitud."
+    );
   }
 
   return data;
 }
 
-function limpiarFormulario() {
-  form.reset();
-  idInput.value = "";
-  formTitle.textContent = "Registrar tecnología";
-  saveButton.textContent = "Agregar tecnología";
-  cancelButton.hidden = true;
+function element(tag, className, text) {
+  const el = document.createElement(tag);
+
+  if (className) el.className = className;
+
+  if (text !== undefined) {
+    el.textContent = String(text);
+  }
+
+  return el;
 }
 
-function crearCelda(fila, texto) {
-  const celda = document.createElement("td");
-  celda.textContent = String(texto);
-  fila.appendChild(celda);
-  return celda;
+function empty(container, text) {
+  container.replaceChildren(element("p", "muted", text));
 }
 
-function crearBoton(texto, accion, clase = "") {
-  const boton = document.createElement("button");
-  boton.type = "button";
-  boton.className = `table-button ${clase}`.trim();
-  boton.textContent = texto;
-  boton.addEventListener("click", accion);
-  return boton;
+function resourceCard(item) {
+  const card = element("article", "resource-card");
+  const top = element("div", "resource-top");
+
+  top.append(
+    element("span", "resource-icon", "⌘"),
+    element("span", "pill", item.categoria)
+  );
+
+  card.append(
+    top,
+    element("h3", "", item.nombre),
+    element("p", "", item.descripcion)
+  );
+
+  return card;
 }
 
-function mostrarEstadoTabla(texto) {
+function render() {
+  const filtered = resources.filter(item =>
+    [item.nombre, item.categoria, item.descripcion].some(value =>
+      String(value).toLocaleLowerCase().includes(searchTerm)
+    )
+  );
+
+  $("#stat-resources").textContent = resources.length;
+
+  const categories = [
+    ...new Set(
+      resources.map(item => item.categoria.trim()).filter(Boolean)
+    )
+  ];
+
+  $("#stat-categories").textContent = categories.length;
+  $("#library-count").textContent = `${filtered.length} recursos`;
+
+  const library = $("#library-resources");
+
+  library.replaceChildren(...filtered.map(resourceCard));
+
+  if (!filtered.length) {
+    empty(
+      library,
+      searchTerm
+        ? "No hay recursos que coincidan con tu búsqueda."
+        : "Todavía no hay recursos. Agrega uno desde Administración."
+    );
+  }
+
+  const recent = $("#recent-resources");
+
+  recent.replaceChildren(
+    ...[...resources].slice(-4).reverse().map(resourceCard)
+  );
+
+  if (!resources.length) {
+    empty(recent, "No hay recursos registrados todavía.");
+  }
+
+  const categoryList = $("#category-list");
+  categoryList.replaceChildren();
+
+  for (const category of categories) {
+    const card = element("article", "category-card");
+
+    card.append(
+      element("span", "resource-icon", "◫"),
+      element("h2", "", category),
+      element(
+        "p",
+        "",
+        `${resources.filter(item =>
+          item.categoria.trim() === category
+        ).length} recursos disponibles`
+      )
+    );
+
+    const button = element(
+      "button",
+      "button secondary",
+      "Ver recursos →"
+    );
+
+    button.addEventListener("click", () => {
+      $("#global-search").value = category;
+      searchTerm = category.toLocaleLowerCase();
+      render();
+      navigate("biblioteca");
+    });
+
+    card.append(button);
+    categoryList.append(card);
+  }
+
+  if (!categories.length) {
+    empty(
+      categoryList,
+      "Las categorías aparecerán cuando agregues recursos."
+    );
+  }
+
+  renderTable();
+}
+
+function tableState(text) {
+  const tr = element("tr");
+  const td = element("td", "", text);
+
+  td.colSpan = 4;
+  tr.append(td);
+  records.replaceChildren(tr);
+}
+
+function actionButton(label, handler, danger = false) {
+  const button = element(
+    "button",
+    `table-button${danger ? " danger" : ""}`,
+    label
+  );
+
+  button.type = "button";
+  button.addEventListener("click", handler);
+
+  return button;
+}
+
+function renderTable() {
   records.replaceChildren();
-  const fila = document.createElement("tr");
-  const celda = crearCelda(fila, texto);
-  celda.colSpan = 4;
-  records.appendChild(fila);
-}
 
-async function cargarTecnologias() {
-  mostrarEstadoTabla("Cargando registros...");
+  if (!resources.length) {
+    tableState("No hay recursos registrados.");
+    return;
+  }
 
-  try {
-    const tecnologias = await solicitar(API);
+  for (const item of resources) {
+    const row = element("tr");
 
-    if (!tecnologias.length) {
-      mostrarEstadoTabla("No hay tecnologías registradas.");
-      return;
-    }
+    [item.id, item.nombre, item.categoria].forEach(value => {
+      row.append(element("td", "", value));
+    });
 
-    records.replaceChildren();
+    const cell = element("td");
+    const actions = element("div", "record-actions");
 
-    for (const tecnologia of tecnologias) {
-      const fila = document.createElement("tr");
+    actions.append(
+      actionButton("Ver", () => viewResource(item.id)),
+      actionButton("Editar", () => editResource(item.id)),
+      actionButton(
+        "Eliminar",
+        () => deleteResource(item.id),
+        true
+      )
+    );
 
-      crearCelda(fila, tecnologia.id);
-      crearCelda(fila, tecnologia.nombre);
-      crearCelda(fila, tecnologia.categoria);
-
-      const acciones = document.createElement("td");
-      const grupo = document.createElement("div");
-      grupo.className = "record-actions";
-
-      grupo.append(
-        crearBoton("Ver", () => verTecnologia(tecnologia.id)),
-        crearBoton("Editar", () => editarTecnologia(tecnologia.id)),
-        crearBoton(
-          "Eliminar",
-          () => eliminarTecnologia(tecnologia.id),
-          "danger"
-        )
-      );
-
-      acciones.appendChild(grupo);
-      fila.appendChild(acciones);
-      records.appendChild(fila);
-    }
-  } catch (error) {
-    mostrarEstadoTabla("No se pudieron cargar los registros.");
-    mostrarMensaje(error.message, true);
+    cell.append(actions);
+    row.append(cell);
+    records.append(row);
   }
 }
 
-async function verTecnologia(id) {
+async function loadResources() {
   try {
-    const tecnologia = await solicitar(`${API}/${id}`);
+    const data = await request(API);
 
-    detail.replaceChildren();
+    if (!Array.isArray(data)) {
+      throw new Error("Respuesta de recursos inválida.");
+    }
 
-    const titulo = document.createElement("h3");
-    titulo.textContent = tecnologia.nombre;
+    resources = data;
+    render();
 
-    const categoria = document.createElement("p");
-    categoria.textContent = `Categoría: ${tecnologia.categoria}`;
+    return true;
+  } catch (error) {
+    resources = [];
+    render();
 
-    const descripcion = document.createElement("p");
-    descripcion.textContent = tecnologia.descripcion;
+    tableState("No se pudieron cargar los recursos.");
 
-    const identificador = document.createElement("p");
-    identificador.textContent = `ID: ${tecnologia.id}`;
+    empty(
+      $("#library-resources"),
+      "No se pudo conectar con la base de datos."
+    );
 
-    detail.append(titulo, categoria, descripcion, identificador);
+    empty(
+      $("#recent-resources"),
+      "No se pudo conectar con la base de datos."
+    );
+
+    showMessage(error.message, true);
+    return false;
+  }
+}
+
+async function viewResource(id) {
+  try {
+    const item = await request(`${API}/${id}`);
+
+    detail.replaceChildren(
+      element("h3", "", item.nombre),
+      element("p", "", `Categoría: ${item.categoria}`),
+      element("p", "", item.descripcion),
+      element("p", "", `ID: ${item.id}`)
+    );
+
     detail.hidden = false;
   } catch (error) {
-    mostrarMensaje(error.message, true);
+    showMessage(error.message, true);
   }
 }
 
-async function editarTecnologia(id) {
+async function editResource(id) {
+  if (busy) return;
+
   try {
-    const tecnologia = await solicitar(`${API}/${id}`);
+    const item = await request(`${API}/${id}`);
 
-    idInput.value = tecnologia.id;
-    nameInput.value = tecnologia.nombre;
-    categoryInput.value = tecnologia.categoria;
-    descriptionInput.value = tecnologia.descripcion;
+    idInput.value = item.id;
+    nameInput.value = item.nombre;
+    categoryInput.value = item.categoria;
+    descriptionInput.value = item.descripcion;
 
-    formTitle.textContent = "Editar tecnología";
+    $("#form-title").textContent = "Editar recurso";
     saveButton.textContent = "Guardar cambios";
     cancelButton.hidden = false;
 
@@ -184,54 +344,69 @@ async function editarTecnologia(id) {
     });
 
     nameInput.focus({ preventScroll: true });
-    mostrarMensaje(`Editando registro #${id}`);
+    showMessage(`Editando recurso #${id}`);
   } catch (error) {
-    mostrarMensaje(error.message, true);
+    showMessage(error.message, true);
   }
 }
 
-async function eliminarTecnologia(id) {
-  if (busy) return;
+function resetForm() {
+  form.reset();
+  idInput.value = "";
 
-  const confirmado = confirm(
-    `¿Seguro que deseas eliminar el registro #${id}?`
-  );
+  $("#form-title").textContent = "Registrar recurso";
+  saveButton.textContent = "Agregar recurso";
+  cancelButton.hidden = true;
+}
 
-  if (!confirmado) return;
+async function deleteResource(id) {
+  if (
+    busy ||
+    !confirm(`¿Seguro que deseas eliminar el recurso #${id}?`)
+  ) {
+    return;
+  }
 
   busy = true;
 
   try {
-    await solicitar(`${API}/${id}`, { method: "DELETE" });
+    await request(`${API}/${id}`, {
+      method: "DELETE"
+    });
 
     if (idInput.value === String(id)) {
-      limpiarFormulario();
+      resetForm();
     }
 
     detail.hidden = true;
-    mostrarMensaje("Tecnología eliminada correctamente.");
-    await cargarTecnologias();
+
+    const loaded = await loadResources();
+
+    if (loaded) {
+      showMessage("Recurso eliminado correctamente.");
+    }
   } catch (error) {
-    mostrarMensaje(error.message, true);
+    showMessage(error.message, true);
   } finally {
     busy = false;
   }
 }
 
-form?.addEventListener("submit", async (event) => {
+form.addEventListener("submit", async event => {
   event.preventDefault();
+
   if (busy) return;
 
   const id = idInput.value;
 
-  const datos = {
+  const data = {
     nombre: nameInput.value.trim(),
     categoria: categoryInput.value.trim(),
     descripcion: descriptionInput.value.trim()
   };
 
-  if (!datos.nombre || !datos.categoria || !datos.descripcion) {
-    mostrarMensaje("Completa todos los campos.", true);
+  if (Object.values(data).some(value => !value)) {
+    showMessage("Completa todos los campos.", true);
     return;
   }
 
@@ -239,36 +414,48 @@ form?.addEventListener("submit", async (event) => {
   saveButton.disabled = true;
 
   try {
-    await solicitar(id ? `${API}/${id}` : API, {
+    await request(id ? `${API}/${id}` : API, {
       method: id ? "PUT" : "POST",
-      body: JSON.stringify(datos)
+      body: JSON.stringify(data)
     });
 
-    limpiarFormulario();
+    resetForm();
     detail.hidden = true;
 
-    mostrarMensaje(
-      id
-        ? "Tecnología actualizada correctamente."
-        : "Tecnología agregada correctamente."
-    );
+    const loaded = await loadResources();
 
-    await cargarTecnologias();
+    if (loaded) {
+      showMessage(
+        id
+          ? "Recurso actualizado correctamente."
+          : "Recurso agregado correctamente."
+      );
+    }
   } catch (error) {
-    mostrarMensaje(error.message, true);
+    showMessage(error.message, true);
   } finally {
     busy = false;
     saveButton.disabled = false;
   }
 });
 
-cancelButton?.addEventListener("click", () => {
-  limpiarFormulario();
-  mostrarMensaje("Edición cancelada.");
+cancelButton.addEventListener("click", () => {
+  resetForm();
+  showMessage("Edición cancelada.");
 });
 
-refreshButton?.addEventListener("click", cargarTecnologias);
+$("#refresh-records").addEventListener("click", loadResources);
+$("#library-refresh").addEventListener("click", loadResources);
 
-if (form && records) {
-  cargarTecnologias();
-}
+$("#global-search").addEventListener("input", event => {
+  searchTerm = event.target.value.trim().toLocaleLowerCase();
+
+  render();
+
+  if (searchTerm) {
+    navigate("biblioteca");
+  }
+});
+
+navigate(location.hash.slice(1) || "dashboard");
+loadResources();

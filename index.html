@@ -1,372 +1,240 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
-  <meta name="description"
-        content="Nexus Tech: desarrollo web, computación en la nube y administración de tecnologías.">
-
-  <title>NEXUS TECH | Desarrollo web y nube</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="DevLibrary, biblioteca digital de recursos de programación.">
+  <title>DevLibrary | Dashboard</title>
   <link rel="stylesheet" href="styles.css">
   <script src="scripts.js" defer></script>
 </head>
-
 <body>
-  <div class="site-container">
-
-    <header class="header" id="inicio">
-      <div class="header-content">
-
-        <a class="brand" href="#inicio">
-          <img src="assets/logo.svg"
-               alt="Logotipo de Nexus Tech">
-          <span>NEXUS<span class="accent">TECH</span></span>
-        </a>
-
-        <button class="menu-toggle"
-                type="button"
-                aria-label="Abrir menú"
-                aria-expanded="false">
-          ☰
-        </button>
-
-        <nav class="nav" aria-label="Navegación principal">
-          <a href="#inicio">Inicio</a>
-          <a href="#tecnologias">Tecnologías</a>
-          <a href="#video">Video</a>
-          <a href="#administracion">Administración</a>
-          <a href="#contacto">Contacto</a>
-        </nav>
-
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#dashboard" data-page="dashboard">
+        <span class="brand-icon">◈</span>
+        <span>Dev<span class="accent">Library</span></span>
+      </a>
+      <div class="side-label">ESPACIO DE APRENDIZAJE</div>
+      <nav class="side-nav" aria-label="Menú principal">
+        <a href="#dashboard" class="nav-link active" data-page="dashboard"><span>▦</span> Dashboard</a>
+        <a href="#biblioteca" class="nav-link" data-page="biblioteca"><span>▤</span> Biblioteca</a>
+        <a href="#categorias" class="nav-link" data-page="categorias"><span>◫</span> Categorías</a>
+        <a href="#multimedia" class="nav-link" data-page="multimedia"><span>▷</span> Multimedia</a>
+        <a href="#administracion" class="nav-link" data-page="administracion"><span>⚙</span> Administración</a>
+      </nav>
+      <div class="side-bottom">
+        <span class="online-dot"></span>
+        Plataforma educativa
+        <small>Node.js · PostgreSQL</small>
       </div>
-    </header>
+    </aside>
 
-    <main>
-
-      <section class="hero">
-        <div class="hero-inner">
-
-          <span class="eyebrow">
-            DESARROLLO WEB · CLOUD COMPUTING
-          </span>
-
-          <h1>
-            El futuro digital
-            <span>comienza aquí.</span>
-          </h1>
-
-          <p>
-            Descubre cómo el desarrollo web y la computación
-            en la nube hacen posibles experiencias digitales
-            modernas, accesibles y escalables.
-          </p>
-
-          <a class="primary-button" href="#tecnologias">
-            Explorar tecnologías →
-          </a>
-
+    <div class="main-area">
+      <header class="topbar">
+        <button class="menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false">☰</button>
+        <div class="top-search">
+          <span>⌕</span>
+          <input id="global-search" type="search" placeholder="Buscar recursos educativos..." aria-label="Buscar recursos">
         </div>
+        <div class="top-profile">
+          <span class="profile-avatar">DL</span>
+          <span>DevLibrary <small>Biblioteca digital</small></span>
+        </div>
+      </header>
 
-        <div class="hero-graphic" aria-hidden="true">
-          <div class="orb">
-            <span>☁</span>
+      <main class="content">
+        <section class="page active" id="dashboard" data-view="dashboard">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">PANEL PRINCIPAL</span>
+              <h1>Bienvenido a DevLibrary <span class="wave"></span></h1>
+              <p>Explora y organiza recursos para seguir aprendiendo programación y tecnología.</p>
+            </div>
+            <button class="button primary" data-go="biblioteca">Explorar biblioteca ↗</button>
           </div>
-          <div class="orbit orbit-one"></div>
-          <div class="orbit orbit-two"></div>
-        </div>
-      </section>
 
-      <section class="section technologies"
-               id="tecnologias">
+          <div class="stats-grid">
+            <article class="stat-card">
+              <div class="stat-icon violet">▤</div>
+              <span>Recursos disponibles</span>
+              <strong id="stat-resources">—</strong>
+              <small>Materiales de aprendizaje</small>
+            </article>
+            <article class="stat-card">
+              <div class="stat-icon cyan">◫</div>
+              <span>Categorías</span>
+              <strong id="stat-categories">—</strong>
+              <small>Áreas de conocimiento</small>
+            </article>
+            <article class="stat-card">
+              <div class="stat-icon amber">◈</div>
+              <span>Plataforma</span>
+              <strong>Online</strong>
+              <small>Biblioteca en la nube</small>
+            </article>
+          </div>
 
-        <div class="section-heading">
-
-          <span class="eyebrow">
-            CONCEPTOS FUNDAMENTALES
-          </span>
-
-          <h2>Tecnologías que impulsan la web</h2>
-
-          <p>
-            Herramientas y servicios que forman parte
-            del desarrollo de aplicaciones actuales.
-          </p>
-
-        </div>
-
-        <div class="cards">
-
-          <article class="tech-card">
-            <span class="card-icon">&lt;/&gt;</span>
-
-            <h3>Desarrollo frontend</h3>
-
-            <p>
-              HTML, CSS y JavaScript permiten crear
-              interfaces atractivas, accesibles e interactivas.
-            </p>
-          </article>
-
-          <article class="tech-card">
-            <span class="card-icon">{ }</span>
-
-            <h3>Desarrollo backend</h3>
-
-            <p>
-              Los servidores y las API procesan información
-              y conectan las aplicaciones con sus datos.
-            </p>
-          </article>
-
-          <article class="tech-card">
-            <span class="card-icon">☁</span>
-
-            <h3>Computación en la nube</h3>
-
-            <p>
-              Plataformas como Railway permiten desplegar
-              aplicaciones y gestionar recursos en línea.
-            </p>
-          </article>
-
-        </div>
-      </section>
-
-      <section class="section video-section" id="video">
-
-        <div class="video-copy">
-
-          <span class="eyebrow">APRENDE MÁS</span>
-
-          <h2>Explora el mundo de la nube</h2>
-
-          <p>
-            La computación en la nube ofrece infraestructura
-            y servicios tecnológicos a través de internet.
-            Consulta contenido educativo en YouTube para
-            conocer sus fundamentos.
-          </p>
-
-          <a class="primary-button"
-             href="https://www.youtube.com/results?search_query=que+es+cloud+computing"
-             target="_blank"
-             rel="noopener noreferrer">
-            Explorar videos en YouTube ↗
-          </a>
-
-        </div>
-
-        <div class="video-art">
-          <div class="play-symbol">▶</div>
-          <span>Cloud Computing</span>
-        </div>
-
-      </section>
-
-      <section class="crud-section" id="administracion">
-
-        <div class="section-heading">
-
-          <span class="eyebrow">
-            BASE DE DATOS · POSTGRESQL
-          </span>
-
-          <h2>Administración de tecnologías</h2>
-
-          <p>
-            Gestiona los registros de tecnologías
-            almacenados en nuestra base de datos.
-            Consulta, agrega, modifica y elimina información
-            mediante una interfaz conectada a PostgreSQL.
-          </p>
-
-        </div>
-
-        <div class="crud-layout">
-
-          <div class="crud-panel">
-
-            <h3 id="form-title">
-              Registrar tecnología
-            </h3>
-
-            <form id="technology-form" class="crud-form">
-
-              <input type="hidden" id="technology-id"
-                     name="id">
-
-              <label for="technology-name">
-                Nombre de la tecnología
-
-                <input
-                  type="text"
-                  id="technology-name"
-                  name="nombre"
-                  placeholder="Ej. React"
-                  maxlength="100"
-                  required>
-              </label>
-
-              <label for="technology-category">
-                Categoría
-
-                <input
-                  type="text"
-                  id="technology-category"
-                  name="categoria"
-                  placeholder="Ej. Frontend"
-                  maxlength="60"
-                  required>
-              </label>
-
-              <label for="technology-description">
-                Descripción
-
-                <textarea
-                  id="technology-description"
-                  name="descripcion"
-                  placeholder="Describe la tecnología y sus principales usos..."
-                  maxlength="1000"
-                  required></textarea>
-              </label>
-
-              <div class="crud-actions">
-
-                <button
-                  class="crud-button"
-                  id="save-record"
-                  type="submit">
-                  Agregar tecnología
-                </button>
-
-                <button
-                  class="crud-button secondary"
-                  id="cancel-edit"
-                  type="button"
-                  hidden>
-                  Cancelar
-                </button>
-
+          <div class="dashboard-grid">
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <span class="eyebrow">DESCUBRE</span>
+                  <h2>Recursos recientes</h2>
+                </div>
+                <button class="text-button" data-go="biblioteca">Ver todos →</button>
               </div>
+              <div class="resource-grid" id="recent-resources">
+                <p class="muted">Cargando recursos...</p>
+              </div>
+            </section>
 
-            </form>
+            <section class="panel focus-panel">
+              <span class="eyebrow">TU SIGUIENTE PASO</span>
+              <div class="focus-graphic">⌘</div>
+              <h2>Aprende algo nuevo hoy</h2>
+              <p>Descubre materiales sobre desarrollo web, programación y bases de datos.</p>
+              <button class="button secondary" data-go="categorias">Explorar categorías →</button>
+            </section>
+          </div>
+        </section>
 
-            <p id="crud-message"
-               class="crud-message"
-               role="status"
-               aria-live="polite"></p>
+        <section class="page" id="biblioteca" data-view="biblioteca">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">RECURSOS EDUCATIVOS</span>
+              <h1>Biblioteca digital</h1>
+              <p>Consulta todos los recursos y descubre nuevos temas.</p>
+            </div>
+            <button class="button secondary" id="library-refresh">Actualizar ↻</button>
+          </div>
+          <div class="panel">
+            <div class="panel-heading">
+              <h2>Todos los recursos</h2>
+              <span class="pill" id="library-count">0 recursos</span>
+            </div>
+            <div class="resource-grid" id="library-resources">
+              <p class="muted">Cargando recursos...</p>
+            </div>
+          </div>
+        </section>
 
+        <section class="page" id="categorias" data-view="categorias">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">EXPLORA POR TEMA</span>
+              <h1>Categorías</h1>
+              <p>Encuentra recursos organizados según su área de conocimiento.</p>
+            </div>
+          </div>
+          <div class="category-grid" id="category-list">
+            <p class="muted">Cargando categorías...</p>
+          </div>
+        </section>
+
+        <section class="page" id="multimedia" data-view="multimedia">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">CONTENIDO MULTIMEDIA</span>
+              <h1>Aprende con recursos digitales</h1>
+              <p>Complementa tu aprendizaje con contenido educativo de otras plataformas.</p>
+            </div>
           </div>
 
-          <div class="crud-panel">
+          <div class="media-grid">
+            <article class="media-card">
+              <div class="media-art purple">▶</div>
+              <div class="media-body">
+                <span class="pill">Desarrollo web</span>
+                <h2>Aprende HTML, CSS y JavaScript</h2>
+                <p>Encuentra tutoriales para crear aplicaciones web.</p>
+                <a class="button secondary" href="https://www.youtube.com/results?search_query=curso+html+css+javascript" target="_blank" rel="noopener noreferrer">Explorar videos ↗</a>
+              </div>
+            </article>
 
-            <h3>Registros almacenados</h3>
+            <article class="media-card">
+              <div class="media-art teal">{ }</div>
+              <div class="media-body">
+                <span class="pill">Programación</span>
+                <h2>Fundamentos de programación</h2>
+                <p>Consulta lecciones sobre lógica y algoritmos.</p>
+                <a class="button secondary" href="https://www.youtube.com/results?search_query=fundamentos+de+programacion" target="_blank" rel="noopener noreferrer">Explorar videos ↗</a>
+              </div>
+            </article>
 
-            <p>
-              Consulta las tecnologías registradas
-              en la base de datos.
-            </p>
+            <article class="media-card">
+              <div class="media-art blue">▥</div>
+              <div class="media-body">
+                <span class="pill">Bases de datos</span>
+                <h2>Introducción a PostgreSQL</h2>
+                <p>Descubre cómo almacenar y consultar información.</p>
+                <a class="button secondary" href="https://www.youtube.com/results?search_query=postgresql+curso+espanol" target="_blank" rel="noopener noreferrer">Explorar videos ↗</a>
+              </div>
+            </article>
+          </div>
+        </section>
 
-            <button
-              class="crud-button secondary"
-              id="refresh-records"
-              type="button">
-              Actualizar registros
-            </button>
-
-            <div class="crud-table-wrapper">
-
-              <table class="crud-table">
-
-                <thead>
-                  <tr>
-                    <th scope="col">ID</th>
-                    <th scope="col">Nombre</th>
-                    <th scope="col">Categoría</th>
-                    <th scope="col">Acciones</th>
-                  </tr>
-                </thead>
-
-                <tbody id="records">
-                  <tr>
-                    <td colspan="4">
-                      Cargando registros...
-                    </td>
-                  </tr>
-                </tbody>
-
-              </table>
-
+        <section class="page" id="administracion" data-view="administracion">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">GESTIÓN DE CONTENIDO</span>
+              <h1>Administración de recursos</h1>
+              <p>Consulta, registra, modifica y elimina recursos de la biblioteca.</p>
             </div>
-
-            <div id="record-detail"
-                 class="record-detail"
-                 aria-live="polite"
-                 hidden>
-            </div>
-
           </div>
 
-        </div>
+          <div class="admin-grid">
+            <section class="panel">
+              <div class="panel-heading">
+                <h2 id="form-title">Registrar recurso</h2>
+              </div>
+              <form id="technology-form">
+                <input id="technology-id" type="hidden">
+                <label for="technology-name">Nombre del recurso</label>
+                <input id="technology-name" type="text" placeholder="Ej. Curso de JavaScript" maxlength="100" required>
+                <label for="technology-category">Categoría</label>
+                <input id="technology-category" type="text" placeholder="Ej. Desarrollo web" maxlength="100" required>
+                <label for="technology-description">Descripción</label>
+                <textarea id="technology-description" placeholder="Describe el recurso educativo..." maxlength="2000" rows="5" required></textarea>
+                <div class="form-actions">
+                  <button id="save-record" class="button primary" type="submit">Agregar recurso</button>
+                  <button id="cancel-edit" class="button secondary" type="button" hidden>Cancelar</button>
+                </div>
+                <p id="crud-message" class="form-message" role="status" aria-live="polite"></p>
+              </form>
+            </section>
 
-      </section>
+            <section class="panel">
+              <div class="panel-heading">
+                <h2>Recursos registrados</h2>
+                <button id="refresh-records" class="button secondary" type="button">Actualizar ↻</button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Categoría</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="records">
+                    <tr><td colspan="4">Cargando recursos...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div id="record-detail" class="detail-card" hidden></div>
+            </section>
+          </div>
+        </section>
+      </main>
 
-    </main>
-
-    <footer class="footer" id="contacto">
-
-      <div class="footer-top">
-
-        <div class="footer-brand">
-          <img src="assets/logo.svg" alt="">
-          <strong>
-            NEXUS<span class="accent">TECH</span>
-          </strong>
-        </div>
-
-        <p>
-          Proyecto académico de desarrollo web,
-          servicios en la nube y bases de datos.
-        </p>
-
-      </div>
-
-      <div class="footer-bottom">
-
-        <p>
-          <strong>Materia:</strong>
-          Conceptualización de servicios en la nube
-        </p>
-
-        <p>
-          <strong>Alumno:</strong>
-          Isaac Vega De La Puente
-        </p>
-
-        <p>
-          <strong>Código:</strong>
-          325046269
-        </p>
-
-        <p>
-          <strong>Correo:</strong>
-          <a href="email:isaac.vega4626@alumnos.udg.mx">
-            isaac.vega4626@alumnos.udg.mx
-          </a>
-        </p>
-
-        <p>
-          Universidad de Guadalajara ·
-          <span id="year"></span>
-        </p>
-
-      </div>
-
-    </footer>
-
+      <footer class="footer">
+        <span>© <span id="year"></span> DevLibrary · Universidad de Guadalajara</span>
+        <span>Proyecto académico · Conceptualización de servicios en la nube</span>
+      </footer>
+    </div>
   </div>
 </body>
 </html>
