@@ -1,6 +1,7 @@
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
+const crypto = require("node:crypto");
 const { Pool } = require("pg");
 
 const root = __dirname;
@@ -10,7 +11,12 @@ const types = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
-  ".svg": "image/svg+xml"
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".ico": "image/x-icon"
 };
 
 const pool = process.env.DATABASE_URL
@@ -20,7 +26,6 @@ const pool = process.env.DATABASE_URL
     })
   : null;
 
-// Respuestas JSON
 function json(res, status, data) {
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
@@ -31,24 +36,27 @@ function json(res, status, data) {
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
-    let body = "";
+    const chunks = [];
     let size = 0;
+    let exceeded = false;
 
     req.on("data", chunk => {
       size += chunk.length;
 
       if (size > 10000) {
-        reject(new Error("Solicitud demasiado grande"));
-        req.destroy();
-        return;
+        exceeded = true;
+      } else if (!exceeded) {
+        chunks.push(chunk);
       }
-
-      body += chunk.toString();
     });
 
     req.on("end", () => {
+      if (exceeded) {
+        return reject(new Error("Solicitud demasiado grande"));
+      }
+
       try {
-        resolve(JSON.parse(body));
+        resolve(JSON.parse(Buffer.concat(chunks).toString("utf8")));
       } catch {
         reject(new Error("JSON inválido"));
       }
@@ -65,11 +73,12 @@ async function initDatabase() {
   }
 
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS tecnologias (
+    CREATE TABLE IF NOT EXISTS recursos (
       id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-      nombre VARCHAR(100) NOT NULL,
+      nombre VARCHAR(150) NOT NULL,
       categoria VARCHAR(100) NOT NULL,
       descripcion TEXT NOT NULL,
+      url TEXT,
       fecha_creacion TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -82,19 +91,61 @@ function validate(data) {
     !data ||
     typeof data.nombre !== "string" ||
     typeof data.categoria !== "string" ||
-    typeof data.descripcion !== "string"
+    typeof data.descripcion !== "string" ||
+    (data.url != null && typeof data.url !== "string")
   ) {
     return false;
   }
 
+  const url = (data.url || "").trim();
+
+  if (url) {
+    try {
+      const parsed = new URL(url);
+
+      if (!["https:", "http:"].includes(parsed.protocol)) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+  }
+
   return (
     data.nombre.trim().length > 0 &&
-    data.nombre.length <= 100 &&
+    data.nombre.trim().length <= 150 &&
     data.categoria.trim().length > 0 &&
-    data.categoria.length <= 100 &&
+    data.categoria.trim().length <= 100 &&
     data.descripcion.trim().length > 0 &&
-    data.descripcion.length <= 2000
+    data.descripcion.trim().length <= 2000 &&
+    url.length <= 2000
   );
+}
+
+function authorized(req) {
+  const secret = process.env.ADMIN_TOKEN;
+
+  if (!secret || secret.length < 32) {
+    return false;
+  }
+
+  const header = req.headers.authorization || "";
+
+  if (!header.startsWith("Bearer ")) {
+    return false;
+  }
+
+  const token = header.slice(7);
+
+  const expected = crypto.createHash("sha256")
+    .update(secret)
+    .digest();
+
+  const received = crypto.createHash("sha256")
+    .update(token)
+    .digest();
+
+  return crypto.timingSafeEqual(expected, received);
 }
 
 async function handleAPI(req, res, pathname) {
@@ -104,11 +155,13 @@ async function handleAPI(req, res, pathname) {
     });
   }
 
-  const match = pathname.match(/^\/api\/tecnologias\/([0-9]+)$/);
-  const isCollection = pathname === "/api/tecnologias";
+  const match = pathname.match(/^\/api\/recursos\/([0-9]+)$/);
+  const isCollection = pathname === "/api/recursos";
 
   if (!match && !isCollection) {
-    return json(res, 404, { error: "Ruta no encontrada" });
+    return json(res, 404, {
+      error: "Ruta no encontrada"
+    });
   }
 
   const id = match ? Number(match[1]) : null;
@@ -117,10 +170,18 @@ async function handleAPI(req, res, pathname) {
     return json(res, 400, { error: "ID inválido" });
   }
 
+  if (["POST", "PUT", "DELETE"].includes(req.method)) {
+    if (!authorized(req)) {
+      return json(res, 401, {
+        error: "No autorizado"
+      });
+    }
+  }
+
   try {
     if (req.method === "GET" && isCollection) {
       const result = await pool.query(
-        "SELECT * FROM tecnologias ORDER BY id ASC"
+        "SELECT * FROM recursos ORDER BY id ASC"
       );
 
       return json(res, 200, result.rows);
@@ -128,13 +189,13 @@ async function handleAPI(req, res, pathname) {
 
     if (req.method === "GET" && match) {
       const result = await pool.query(
-        "SELECT * FROM tecnologias WHERE id = $1",
+        "SELECT * FROM recursos WHERE id = $1",
         [id]
       );
 
       if (result.rowCount === 0) {
         return json(res, 404, {
-          error: "Registro no encontrado"
+          error: "Recurso no encontrado"
         });
       }
 
@@ -151,14 +212,15 @@ async function handleAPI(req, res, pathname) {
       }
 
       const result = await pool.query(
-        `INSERT INTO tecnologias
-         (nombre, categoria, descripcion)
-         VALUES ($1, $2, $3)
+        `INSERT INTO recursos
+         (nombre, categoria, descripcion, url)
+         VALUES ($1, $2, $3, $4)
          RETURNING *`,
         [
           data.nombre.trim(),
           data.categoria.trim(),
-          data.descripcion.trim()
+          data.descripcion.trim(),
+          (data.url || "").trim() || null
         ]
       );
 
@@ -175,23 +237,25 @@ async function handleAPI(req, res, pathname) {
       }
 
       const result = await pool.query(
-        `UPDATE tecnologias
+        `UPDATE recursos
          SET nombre = $1,
              categoria = $2,
-             descripcion = $3
-         WHERE id = $4
+             descripcion = $3,
+             url = $4
+         WHERE id = $5
          RETURNING *`,
         [
           data.nombre.trim(),
           data.categoria.trim(),
           data.descripcion.trim(),
+          (data.url || "").trim() || null,
           id
         ]
       );
 
       if (result.rowCount === 0) {
         return json(res, 404, {
-          error: "Registro no encontrado"
+          error: "Recurso no encontrado"
         });
       }
 
@@ -200,18 +264,18 @@ async function handleAPI(req, res, pathname) {
 
     if (req.method === "DELETE" && match) {
       const result = await pool.query(
-        "DELETE FROM tecnologias WHERE id = $1 RETURNING id",
+        "DELETE FROM recursos WHERE id = $1 RETURNING id",
         [id]
       );
 
       if (result.rowCount === 0) {
         return json(res, 404, {
-          error: "Registro no encontrado"
+          error: "Recurso no encontrado"
         });
       }
 
       return json(res, 200, {
-        mensaje: "Registro eliminado correctamente"
+        mensaje: "Recurso eliminado correctamente"
       });
     }
 
@@ -224,10 +288,13 @@ async function handleAPI(req, res, pathname) {
       error.message === "JSON inválido" ||
       error.message === "Solicitud demasiado grande"
     ) {
-      return json(res, 400, { error: error.message });
+      return json(res, 400, {
+        error: error.message
+      });
     }
 
     console.error("Error en API:", error);
+
     return json(res, 500, {
       error: "Error interno del servidor"
     });
@@ -242,7 +309,9 @@ const server = http.createServer(async (req, res) => {
       new URL(req.url, "http://localhost").pathname
     );
   } catch {
-    return json(res, 400, { error: "Solicitud inválida" });
+    return json(res, 400, {
+      error: "Solicitud inválida"
+    });
   }
 
   if (pathname.startsWith("/api/")) {
